@@ -292,54 +292,74 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Container(
         margin: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: _isUpDisabled ? null : _goUp,
-              child: const Text('Góra'),
-            ),
-            Center(
-              child: Text('Keys: $numOfKeys'),
-            ),
-            Row(
-              children: <Widget>[
-                ElevatedButton(
-                  onPressed: _isLeftDisabled ? null : _goLeft,
-                  child: const Text("Lewo"),
-                ),
-                Expanded(
-                  child: Container(),
-                ),
-                SizedBox(
-                  height: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[1], // Adjust the height constraint as needed
-                  width: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[0],
-                  child: CustomPaint(
-                    painter: LabiryntDraw(widget.rows, widget.cols, widget.labirynt),
-                  )
-                ),
-                Expanded(
-                  child: Container(),
-                ),
-                ElevatedButton(
-                  onPressed: _isRightDisabled ? null : _goRight,
-                  child: const Text("Prawo"),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: SizedBox(
+                height: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[1], // Adjust the height constraint as needed
+                width: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[0],
+                child: CustomPaint(
+                  painter: LabiryntDraw(widget.rows, widget.cols, widget.labirynt),
                 )
+              ),
+            ),
+            Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: _isUpDisabled ? null : _goUp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.withOpacity(0.6)
+                    ),
+                    child: const Text('Góra',),
+                  ),
+                  Text('Keys: $numOfKeys', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  ElevatedButton(
+                    onPressed: _isLeftDisabled ? null : _goLeft,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.withOpacity(0.6)
+                    ),
+                    child: const Text("Lewo"),
+                  ),
+                  Expanded(
+                    child: Container(),
+                  ),
+                  ElevatedButton(
+                    onPressed: _isRightDisabled ? null : _goRight,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.withOpacity(0.6)
+                    ),
+                    child: const Text("Prawo"),
+                  )
+                ],
+              ),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _isDownDisabled ? null : _goDown,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.withOpacity(0.6)
+                    ),
+                  child: const Text("Dół"),
+                ),
+              )
               ],
             ),
-            ElevatedButton(
-              onPressed: _isDownDisabled ? null : _goDown,
-              child: const Text("Dół"),
-            )
-          ],
+          ]
         ),
       ),
     );
   }
 
   List<double> labiryntSize(BuildContext context, double aspectRatio){
-    double width = MediaQuery.of(context).size.width - 200;
-    double height = MediaQuery.of(context).size.height - 200;
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
     if(aspectRatio < 1){
       if(height * aspectRatio > width){
         height = width / aspectRatio;
