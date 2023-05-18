@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:labirynt/labirynt_generator.dart';
+import 'dart:math' show pi;
 
 void main() {
   runApp(const MyApp());
@@ -95,8 +96,8 @@ class _HomePageState extends State<HomePage> {
                 int colss = int.parse(colsController.text);
                 List<int> labirynt = Labirynt(rows: rowss,
                                               cols: colss,
-                                              jednstr: false, 
-                                              drzwi: false).labirynt;
+                                              jednstr: true, 
+                                              drzwi: true).labirynt;
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -115,18 +116,6 @@ class _HomePageState extends State<HomePage> {
         ),
       )
     );
-  }
-
-  List<int> generateMaze(int rows, int cols){
-    //edges
-    // for(var i = 0; i <)
-    
-    // for(var i = 1; i < cols-1; i++){
-    //   for(var j = 1; j < rows-1; j++){
-
-    //   }
-    // }
-    return List.empty();
   }
 }
 
@@ -193,14 +182,13 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLeftDisabled = true;
   bool _isRightDisabled = true;
   bool _isDownDisabled = true;
-
-  int position = 0;
   int numOfMoves = -1;
+  int numOfKeys = 0;
 
   @override
   void initState(){
-    position = findStart();
     _checkButtons();
+    super.initState();
   }
 
   void _checkButtons() {
@@ -210,7 +198,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
       numOfMoves += 1;
-      if(widget.labirynt[position] == 0){
+      if(widget.labirynt[position()] & ~(1<<4) == 0){
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -219,34 +207,65 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }
 
-      _isLeftDisabled = widget.labirynt[position] & (1<<0) == (1<<0) ? false : true;
-      _isRightDisabled = widget.labirynt[position] & (1<<1) == (1<<1) ? false : true;
-      _isUpDisabled = widget.labirynt[position] & (1<<2) == (1<<2) ? false : true;
-      _isDownDisabled = widget.labirynt[position] & (1<<3) == (1<<3) ? false : true;
+      _isLeftDisabled = widget.labirynt[position()] & (1<<0) == (1<<0) ? false : true;
+      _isRightDisabled = widget.labirynt[position()] & (1<<1) == (1<<1) ? false : true;
+      _isUpDisabled = widget.labirynt[position()] & (1<<2) == (1<<2) ? false : true;
+      _isDownDisabled = widget.labirynt[position()] & (1<<3) == (1<<3) ? false : true;
+
+      if(numOfKeys < 1){
+        try{ _isLeftDisabled = widget.labirynt[position()-1] & (1<<5) == (1<<5) ? true : _isLeftDisabled; } catch(_){}
+        try{ _isRightDisabled = widget.labirynt[position()+1] & (1<<5) == (1<<5) ? true : _isRightDisabled; } catch(_){}
+        try{ _isUpDisabled = widget.labirynt[position()-widget.cols] & (1<<5) == (1<<5) ? true : _isUpDisabled; } catch(_){}
+        try{ _isDownDisabled = widget.labirynt[position()+widget.cols] & (1<<5) == (1<<5) ? true : _isDownDisabled; } catch(_){}
+      }
   }
   
+  void move(){
+    if(widget.labirynt[position()] & (1<<5) == (1<<5)){
+      widget.labirynt[position()] &= ~(1<<5);
+      setState((){ numOfKeys--; });
+    }
+    if(widget.labirynt[position()] & (1<<6) == (1<<6)){
+      widget.labirynt[position()] &= ~(1<<6);
+      setState(() {
+        numOfKeys++;
+      });
+    }
+  }
 
   void _goUp(){
-    position -= widget.cols;
+    var pos = position();
+    widget.labirynt[pos] &= ~(1<<4);
+    widget.labirynt[pos-widget.cols] |= (1<<4);
+    move();
     setState(() {_checkButtons();});
   }
 
   void _goDown(){
-    position += widget.cols;
+    var pos = position();
+    widget.labirynt[pos] &= ~(1<<4);
+    widget.labirynt[pos+widget.cols] |= (1<<4);
+    move();
     setState(() {_checkButtons();});
   }
 
   void _goLeft(){
-    position -= 1;
+    var pos = position();
+    widget.labirynt[pos] &= ~(1<<4);
+    widget.labirynt[pos-1] |= (1<<4);
+    move();
     setState(() {_checkButtons();});
   }
 
   void _goRight(){
-    position += 1;
+    var pos = position();
+    widget.labirynt[pos] &= ~(1<<4);
+    widget.labirynt[pos+1] |= (1<<4);
+    move();
     setState(() {_checkButtons();});
   }
 
-  int findStart(){
+  int position(){
     for(var i = 0; i < widget.rows; i++){
       for(var j = 0; j < widget.cols; j++){
         if(widget.labirynt[i*widget.cols + j] & (1<<4) == (1<<4)){
@@ -280,6 +299,9 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: _isUpDisabled ? null : _goUp,
               child: const Text('Góra'),
             ),
+            Center(
+              child: Text('Keys: $numOfKeys'),
+            ),
             Row(
               children: <Widget>[
                 ElevatedButton(
@@ -287,22 +309,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: const Text("Lewo"),
                 ),
                 Expanded(
-                    child: drawLabirynt(widget.labirynt, widget.rows, widget.cols,2)
+                  child: Container(),
                 ),
-                  // child: AspectRatio(
-                  //   aspectRatio: widget.cols/widget.rows,
-                  //   child: Container(
-                  //     color: Colors.amber,
-                  //   )
-                  //   // Image.asset(
-                  //   //   'images/block.jpg',
-                  //   //   fit: BoxFit.fill  
-                  //   // ),
-                  // ),
-                // Image.asset(
-                //   'images/block.jpg'
-                //   fit: BoxFit.fill  
-                // ),
+                SizedBox(
+                  height: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[1], // Adjust the height constraint as needed
+                  width: labiryntSize(context, (widget.cols*2+1)/(widget.rows*2+1))[0],
+                  child: CustomPaint(
+                    painter: LabiryntDraw(widget.rows, widget.cols, widget.labirynt),
+                  )
+                ),
+                Expanded(
+                  child: Container(),
+                ),
                 ElevatedButton(
                   onPressed: _isRightDisabled ? null : _goRight,
                   child: const Text("Prawo"),
@@ -318,225 +336,271 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-}
 
-Widget drawLabirynt(List<int> labirynt, int rows, int cols, int endPoint){
-  Widget drawInside(int i, int j){
-    if(labirynt[i*cols + j] & (1<<5) == (1<<5)){
-      return Image.asset(
-        'images/doors.png',
-        fit: BoxFit.fill
-      );
-    }
-    else if(labirynt[i*cols + j] & (1<<6) == (1<<6)){
-      return Image.asset(
-        'images/key.png',
-        fit: BoxFit.fill
-      );
-    }
-    else if(labirynt[i*cols + j] & (1<<4) == (1<<4)){
-      return Image.asset(
-        'images/player.png',
-        fit: BoxFit.fill
-      );
-    }
-    else if(labirynt[i*cols + j] == 0){
-      return Image.asset(
-        'images/finish.png',
-        fit: BoxFit.fill
-      );
+  List<double> labiryntSize(BuildContext context, double aspectRatio){
+    double width = MediaQuery.of(context).size.width - 200;
+    double height = MediaQuery.of(context).size.height - 200;
+    if(aspectRatio < 1){
+      if(height * aspectRatio > width){
+        height = width / aspectRatio;
+      }
+      else{
+        width = height * aspectRatio;
+      }
     }
     else{
-      return Container();
+      if(width / aspectRatio > height){
+        width = height * aspectRatio;
+      }
+      else{
+        height = width / aspectRatio;
+      }
+    }
+    return [width, height];
+  }
+}
+
+class LabiryntDraw extends CustomPainter{
+
+  late List<int> labirynt;
+  late int rows;
+  late int cols;
+
+  LabiryntDraw(this.rows, this.cols, this.labirynt);
+
+  @override
+  void paint(Canvas canvas, Size size){
+    double blockWidth = size.width / (cols*2 + 1);
+    double blockHeight = size.height / (rows*2 + 1);
+
+
+    void paintBlock(int i, int j, Color colorStroke, Color colorFill){
+      final rect = Rect.fromLTWH(j*blockWidth, i*blockHeight, blockWidth, blockHeight);
+      final paintStroke = Paint()
+        ..color = colorStroke
+        ..style = PaintingStyle.stroke;
+
+      final paintFill = Paint()
+        ..color = colorFill
+        ..style = PaintingStyle.fill;
+      canvas.drawRect(rect, paintFill);
+      canvas.drawRect(rect, paintStroke);
+    }
+
+    void paintWall(int i, int j){
+      paintBlock(i, j, 
+        const Color.fromARGB(255, 62, 62, 62), 
+        const Color.fromARGB(255, 136, 136, 136));
+    }
+
+    void paintWallSide(int i, int j, int direction){
+      paintBlock(i, j, 
+        const Color.fromARGB(255, 125, 125, 125), 
+        const Color.fromARGB(255, 209, 209, 209));
+      
+      final paint = Paint()
+      ..color = const Color.fromARGB(255, 82, 82, 82)
+      ..strokeWidth = blockWidth/8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+      switch (direction) {
+        case 0:
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.1, i*blockHeight + blockHeight*0.5), 
+            Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint);
+            canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.3), 
+            Offset(j*blockWidth + blockWidth*0.1, i*blockHeight + blockHeight*0.5), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.7), 
+            Offset(j*blockWidth + blockWidth*0.1, i*blockHeight + blockHeight*0.5), paint);
+          break;
+        case 1:
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.1, i*blockHeight + blockHeight*0.5), 
+            Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.3), 
+            Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.7), 
+            Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint);
+          break;
+        case 2:
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.1), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.9), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.3), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.1), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.3), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.1), paint);
+          break;
+        case 3:
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.1), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.9), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.7), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.9), paint);
+          canvas.drawLine(
+            Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.7), 
+            Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.9), paint);
+          break;
+        default:
+      }
+    }
+
+    void paintDoor(int i, int j){
+      paintBlock(i, j, 
+        const Color.fromARGB(255, 52, 28, 10), 
+        const Color.fromARGB(255, 96, 57, 16));
+
+        final paint = Paint()
+        ..color = const Color.fromARGB(255, 170, 170, 170)
+        ..strokeWidth = blockWidth/16
+        ..style = PaintingStyle.stroke;
+
+        canvas.drawLine(
+          Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.5), 
+          Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint); 
+
+        canvas.drawLine(
+          Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), 
+          Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.6), paint); 
+    }
+
+    void paintKey(int i, int j){
+      final rect = Rect.fromLTWH(
+        j*blockWidth + blockWidth*0.1, 
+        i*blockHeight + blockHeight*0.4, 
+        blockWidth*0.2, blockHeight*0.2);
+
+      final paint = Paint()
+        ..color = const Color.fromARGB(255, 118, 118, 118)
+        ..strokeWidth = blockWidth/16
+        ..style = PaintingStyle.stroke;
+
+      canvas.drawArc(rect, 0, 2*pi, false, paint);
+
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.5), 
+        Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), paint); 
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.8, i*blockHeight + blockHeight*0.5), 
+        Offset(j*blockWidth + blockWidth*0.8, i*blockHeight + blockHeight*0.6), paint); 
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.5), 
+        Offset(j*blockWidth + blockWidth*0.9, i*blockHeight + blockHeight*0.6), paint); 
+    }
+    
+    void paintPlayer(int i, int j){
+      final rect = Rect.fromLTWH(
+        j*blockWidth + blockWidth*0.4, 
+        i*blockHeight + blockHeight*0.1, 
+        blockWidth*0.2, blockHeight*0.2);
+
+      final paint = Paint()
+        ..color = const Color.fromARGB(255, 69, 69, 69)
+        ..strokeWidth = blockWidth/16
+        ..style = PaintingStyle.stroke;
+
+      canvas.drawArc(rect, 0, 2*pi, false, paint);
+
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.3), 
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.6), paint); 
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.6), 
+        Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.9), paint); 
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.6), 
+        Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.9), paint);
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.4), 
+        Offset(j*blockWidth + blockWidth*0.7, i*blockHeight + blockHeight*0.6), paint); 
+      canvas.drawLine(
+        Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.4), 
+        Offset(j*blockWidth + blockWidth*0.3, i*blockHeight + blockHeight*0.6), paint);  
+    }
+
+    void paintFinish(int i, int j){
+      var help = 0;
+      for(int k = 0; k < 8; k++){
+        for(int l = 0; l < 8; l++){
+          final rect = Rect.fromLTWH(
+            j*blockWidth + (blockWidth*(l/8)), 
+            i*blockHeight + (blockHeight*(k/8)), 
+            blockWidth / 8, 
+            blockHeight / 8
+          );
+
+          final paintFill = Paint()
+            ..color = (help++)%2 == 1?Colors.black : Colors.white
+            ..style = PaintingStyle.fill;
+          canvas.drawRect(rect, paintFill);
+        }
+        help--;
+      }
+    }
+    //top border
+    for(var j = 0; j < (cols*2+1); j++){
+      paintWall(0,j);
+    }
+
+    //left border
+    for(var i = 0; i < rows*2+1; i++){
+      paintWall(i, 0);
+    }
+
+    for(var i = 0; i < rows; i++){
+      for(var j = 0; j < cols; j++){
+        paintWall((i*2)+2, (j*2)+2);
+        if(labirynt[i*cols + j] & (1<<5) == (1<<5)){
+          paintDoor((i*2)+1, (j*2)+1);
+        }
+        else if(labirynt[i*cols + j] & (1<<6) == (1<<6)){
+          paintKey((i*2)+1, (j*2)+1);
+        }
+        else if(labirynt[i*cols + j] & (1<<4) == (1<<4)){
+          paintPlayer((i*2)+1, (j*2)+1);
+        }
+        else if(labirynt[i*cols + j] == 0){
+          paintFinish((i*2)+1, (j*2)+1);
+        }
+
+        if(j < cols-1){
+          bool isLeft = false;
+          bool isRight = false;
+          if(labirynt[i*cols + j] & (1<<1) == (1<<1)) { isRight = true; }
+          if(labirynt[i*cols + j + 1] & (1<<0) == (1<<0)) { isLeft = true; }
+          if(!isRight && !isLeft){ paintWall((i*2)+1, (j*2)+2); }
+          else if(isRight && !isLeft){ paintWallSide((i*2)+1, (j*2)+2, 1); }
+          else if(isLeft && !isRight){ paintWallSide((i*2)+1, (j*2)+2, 0); }
+        }
+        else if(labirynt[i*cols + j] & (1<<1) != (1<<1)){
+          paintWall((i*2)+1, (j*2)+2);
+        }
+      }
+      for(var j = 0; j < cols; j++){
+        if(i < rows-1){
+          bool isUp = false;
+          bool isDown = false;
+          if(labirynt[i*cols + j] & (1<<3) == (1<<3)) { isDown = true; }
+          if(labirynt[(i+1)*cols + j] & (1<<2) == (1<<2)) { isUp = true; }
+          if(!isUp && !isDown){ paintWall((i*2)+2, (j*2)+1); }
+          else if(isUp && !isDown){ paintWallSide((i*2)+2, (j*2)+1, 2); }
+          else if(isDown && !isDown){ paintWallSide((i*2)+2, (j*2)+1, 3); }
+        }
+        else if(labirynt[i*cols + j] & (1<<3) != (1<<3)){
+          paintWall((i*2)+2, (j*2)+1);
+        }
+      }
     }
   }
 
-  Widget drawRight(int i, int j){
-    if(j < cols-1){
-      bool is_left = false;
-      bool is_right = false;
-      if(labirynt[i*cols + j] & (1<<1) == (1<<1)) { is_right = true; }
-      if(labirynt[i*cols + j + 1] & (1<<0) == (1<<0)) { is_left = true; }
-      if(is_right && is_left){ 
-        return Container();
-      }
-      else if(!is_right && !is_left){ 
-        return Image.asset(
-          'images/block.png',
-          fit: BoxFit.fill
-        );
-      }
-      else if(is_right){ 
-        return Image.asset(
-          'images/blockRight.png',
-          fit: BoxFit.fill
-        );
-      }
-      else if(is_left){ 
-        return Image.asset(
-          'images/blockLeft.png',
-          fit: BoxFit.fill
-        );
-      }
-    }
-    else if(labirynt[i*cols + j] & (1<<1) == (1<<1)){
-      return Container();
-    }
-    return Image.asset(
-      'images/block.png',
-      fit: BoxFit.fill
-    );
-  }
-  
-  Widget drawDown(int i, int j){
-    if(i < rows-1){
-      bool is_up = false;
-      bool is_down = false;
-      if(labirynt[i*cols + j] & (1<<3) == (1<<3)) { is_down = true; }
-      if(labirynt[(i+1)*cols + j] & (1<<2) == (1<<2)) { is_up = true; }
-      if(is_up && is_down){ 
-        return Container();
-      }
-      else if(!is_up && !is_down){ 
-        return Image.asset(
-          'images/block.png',
-          fit: BoxFit.fill
-        );
-      }
-      else if(is_up){ 
-        return Image.asset(
-          'images/blockUp.png',
-          fit: BoxFit.fill
-        );
-      }
-      else if(is_down){ 
-        return Image.asset(
-          'images/blockDown.png',
-          fit: BoxFit.fill
-        );
-      }
-    }
-    else if(labirynt[i*cols + j] & (1<<3) == (1<<3)){
-      return Container();
-    }
-
-    return Image.asset(
-      'images/block.png',
-      fit: BoxFit.fill
-    );
-  }
-  return Expanded(
-    child: AspectRatio(
-      aspectRatio: cols/rows,
-      child: Column(
-        children: [
-          Row(
-            children: List.generate(cols*2+1, (_) => Expanded(
-                child: Image.asset(
-                  'images/block.png',
-                  fit: BoxFit.fill  
-                ),
-              ),  
-            ),
-          ),
-          Column(
-            children: List.generate(rows, (i) => Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(child:Image.asset(
-                        'images/block.png',
-                        fit: BoxFit.fill,  
-                      ),)] + 
-                    List.generate(cols*2, (j) => Expanded(
-                        child: j%2==0?
-                          Expanded(child: drawInside(i, j~/2)):
-                          Expanded(child: drawRight(i, j~/2))
-                      )
-                    ),
-                  ),
-                Row(
-                  children: [
-                    Expanded(child:Image.asset(
-                        'images/block.png',
-                        fit: BoxFit.fill,  
-                      ),)] + 
-                    List.generate(cols*2, (j) => Expanded(
-                        child: j%2==0?
-                          Expanded(child: drawDown(i, j~/2)):
-                          Expanded(child: Image.asset(
-                        'images/block.png',
-                        fit: BoxFit.fill,  
-                      ))
-                      )
-                    ),
-                ),
-              ]
-              )
-            )
-          ),
-        ]
-      ),
-    ),
-  );
-  
-  // for(var i = 0; i < rows; i++){
-  //   stdout.write("██");
-  //   for(var j = 0; j < cols; j++){
-  //     if(labirynt[i*cols + j] & (1<<5) == (1<<5)){
-  //       stdout.write("DD");
-  //     }
-  //     else if(labirynt[i*cols + j] & (1<<6) == (1<<6)){
-  //       stdout.write("KK");
-  //     }
-  //     else if(labirynt[i*cols + j] & (1<<4) == (1<<4)){
-  //       stdout.write("ST");
-  //     }
-  //     else if(i*cols + j == endPoint){
-  //       stdout.write("EN");
-  //     }
-  //     else{
-  //       stdout.write("  ");
-  //     }
-
-  //     if(j < cols-1){
-  //       bool is_left = false;
-  //       bool is_right = false;
-  //       if(labirynt[i*cols + j] & (1<<1) == (1<<1)) { is_right = true; }
-  //       if(labirynt[i*cols + j + 1] & (1<<0) == (1<<0)) { is_left = true; }
-  //       if(is_right && is_left){ stdout.write("  "); }
-  //       else if(!is_right && !is_left){ stdout.write("██"); }
-  //       else if(is_right){ stdout.write(">>"); }
-  //       else if(is_left){ stdout.write("<<"); }
-  //     }
-  //     else if(labirynt[i*cols + j] & (1<<1) == (1<<1)){
-  //       stdout.write("  ");
-  //     }
-  //     else{
-  //       stdout.write("██");
-  //     }
-  //   }
-  //   stdout.write("\n");
-  //   stdout.write("██");
-  //   for(var j = 0; j < cols; j++){
-  //     if(i < rows-1){
-  //       bool is_up = false;
-  //       bool is_down = false;
-  //       if(labirynt[i*cols + j] & (1<<3) == (1<<3)) { is_down = true; }
-  //       if(labirynt[(i+1)*cols + j] & (1<<2) == (1<<2)) { is_up = true; }
-  //       if(is_up && is_down){ stdout.write("  "); }
-  //       else if(!is_up && !is_down){ stdout.write("██"); }
-  //       else if(is_up){ stdout.write("^^"); }
-  //       else if(is_down){ stdout.write("⬇⬇"); }
-  //     }
-  //     else if(labirynt[i*cols + j] & (1<<3) == (1<<3)){
-  //       stdout.write("  ");
-  //     }
-  //     else{
-  //       stdout.write("██");
-  //     }
-  //     stdout.write("██");
-  //   }
-  //   stdout.write("\n");
-  // }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
