@@ -528,7 +528,6 @@ class LabiryntDraw extends CustomPainter{
         ..style = PaintingStyle.stroke;
 
       canvas.drawArc(rect, 0, 2*pi, false, paint);
-
       canvas.drawLine(
         Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.3), 
         Offset(j*blockWidth + blockWidth*0.5, i*blockHeight + blockHeight*0.6), paint); 
@@ -612,7 +611,7 @@ class LabiryntDraw extends CustomPainter{
           if(labirynt[(i+1)*cols + j] & (1<<2) == (1<<2)) { isUp = true; }
           if(!isUp && !isDown){ paintWall((i*2)+2, (j*2)+1); }
           else if(isUp && !isDown){ paintWallSide((i*2)+2, (j*2)+1, 2); }
-          else if(isDown && !isDown){ paintWallSide((i*2)+2, (j*2)+1, 3); }
+          else if(isDown && !isUp){ paintWallSide((i*2)+2, (j*2)+1, 3); }
         }
         else if(labirynt[i*cols + j] & (1<<3) != (1<<3)){
           paintWall((i*2)+2, (j*2)+1);
@@ -623,4 +622,8 @@ class LabiryntDraw extends CustomPainter{
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+List<dynamic> hello(){
+  return [[1,2,3],[0,3],["hello","f"]];
 }

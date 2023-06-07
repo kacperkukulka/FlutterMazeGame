@@ -109,51 +109,34 @@ class Labirynt{
       List<int> directions = [0,1,2,3];
       directions.shuffle();
 
+      bool goFurther(
+          int direction,
+        ){
+          int newX = x;
+          int newY = y;
+          switch (direction) {
+            case 0: newY = y-1; break;
+            case 1: newY = y+1; break;
+            case 2: newX = x-1; break;
+            case 3: newX = x+1; break;
+            default: throw ArgumentError("direction out of range");
+          }
+          if(newX >= cols || newX < 0 || newY >= rows || newY < 0) return false;
+          if(!isVisited[newX*cols+newY]){
+            Map<int,int> nextBit = {0:1,1:0,2:3,3:2};
+            stack.add(x*cols+y);
+            labirynt[x*cols+y] |= (1<<direction);
+            labirynt[newX*cols+newY] |= (1<<nextBit[direction]!);
+            x = newX;
+            y = newY;
+            return true;
+          }
+          return false;
+      }
+
       bool isContinue = false;
       for(int i = 0; i < 4; i++){
-        if(directions[i] == 0 && y > 0){
-          if(!isVisited[x*cols+y-1]){
-            stack.add(x*cols+y);
-            labirynt[x*cols+y] |= (1<<0);
-            labirynt[x*cols+y-1] |= (1<<1);
-            y = y-1;
-            isContinue = true;
-            break;
-          }
-        }
-
-        if(directions[i] == 1 && y < cols-1){
-          if(!isVisited[x*cols+y+1]){
-            stack.add(x*cols+y);
-            labirynt[x*cols+y] |= (1<<1);
-            labirynt[x*cols+y+1] |= (1<<0);
-            y = y+1;
-            isContinue = true;
-            break;
-          }
-        }
-
-        if(directions[i] == 2 && x > 0){
-          if(!isVisited[(x-1)*cols+y]){
-            stack.add(x*cols+y);
-            labirynt[x*cols+y] |= (1<<2);
-            labirynt[(x-1)*cols+y] |= (1<<3);
-            x = x-1;
-            isContinue = true;
-            break;
-          }
-        }
-
-        if(directions[i] == 3 && x < rows-1){
-          if(!isVisited[(x+1)*cols+y]){
-            stack.add(x*cols+y);
-            labirynt[x*cols+y] |= (1<<3);
-            labirynt[(x+1)*cols+y] |= (1<<2);
-            x = x+1;
-            isContinue = true;
-            break;
-          }
-        }
+        if(goFurther(directions[i])){ isContinue = true; break; }
       }
 
       if(!isContinue){
@@ -172,7 +155,6 @@ class Labirynt{
   }
 
   void losujJednPrzejscia(){
-    int i = 0;
     int iloscPrzejsc = ((path.length-2)/zageszczenieJedn).ceil();
 
     List<bool> czyJedn = List.filled(path.length-2, false);
