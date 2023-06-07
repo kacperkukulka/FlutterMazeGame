@@ -25,8 +25,8 @@ class Labirynt{
 
     int endPoint = generujLabirynt(startX, startY);
     
-    if(jednstr){ losujJednPrzejscia(); }
     if(drzwi){ losujDrzwi(); }
+    if(jednstr){ losujJednPrzejscia(); }
   }
 
   void losujDrzwi(){
@@ -121,7 +121,7 @@ class Labirynt{
             case 3: newX = x+1; break;
             default: throw ArgumentError("direction out of range");
           }
-          if(newX >= cols || newX < 0 || newY >= rows || newY < 0) return false;
+          if(newX >= rows || newX < 0 || newY >= cols || newY < 0) return false;
           if(!isVisited[newX*cols+newY]){
             Map<int,int> nextBit = {0:1,1:0,2:3,3:2};
             stack.add(x*cols+y);

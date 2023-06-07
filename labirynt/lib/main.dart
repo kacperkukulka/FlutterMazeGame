@@ -56,9 +56,9 @@ class _HomePageState extends State<HomePage> {
           children: [
             ElevatedButton(
               onPressed: (){
-                List<int> labirynt = [10, 8, 10, 9,
+                List<int> labirynt = [74, 8, 10, 9,
                                       28, 1, 0, 12,
-                                      12, 10, 9, 13,
+                                      44, 10, 9, 13,
                                       6, 5, 6, 5];
                 Navigator.pushReplacement(
                   context,
